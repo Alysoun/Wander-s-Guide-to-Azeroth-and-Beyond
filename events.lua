@@ -1,4 +1,3 @@
--- events.lua
 
 local addonName, addon = ...
 
@@ -227,6 +226,12 @@ function addon.CheckChromieTimeStatus()
         addon.DebugPrint("Chromie Time is not active")
         addon.UpdateChromieTimeSelection(nil)
     end
+end
+
+-- Adding WORLD_MAP_UPDATE event handler
+addon.eventHandlers.WORLD_MAP_UPDATE = function(self, event)
+    addon.DebugPrint("WORLD_MAP_UPDATE event fired")
+    addon.UpdateExplorationButtonText()
 end
 
 -- Create a frame to handle events
