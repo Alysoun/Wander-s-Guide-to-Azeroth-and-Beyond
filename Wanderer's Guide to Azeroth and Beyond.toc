@@ -1,0 +1,29 @@
+## Interface: 110002
+## Title: Wanderer's Guide to Azeroth and Beyond
+## Author: Rahfel
+## Version: 0.9.5
+## Notes: Extract coordinates from exploration achievements and manage exploration.
+## SavedVariables: WandererDB
+## SavedVariablesPerCharacter: WandererCharDB
+## Dependencies: TomTom, Ace3
+## X-Embeds: Ace3
+
+# Data files
+CollectCoord.lua
+
+# Core files
+main.lua
+config.lua
+debug.lua
+helpers.lua
+events.lua
+pois.lua
+tomtom.lua
+ui.lua
+leveling.lua
+achievements.lua
+waypoints.lua
+
+
+
+
