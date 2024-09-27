@@ -27,23 +27,18 @@ function addon:InitializeDatabase()
 end
 
 function addon:OnInitialize()
-    print("Wanderer's Guide: OnInitialize started")
     self:DebugPrint(addonName .. " initializing")
     
     -- Load configuration
-    print("Wanderer's Guide: Loading configuration")
     self:LoadConfig()
     
     -- Initialize database
-    print("Wanderer's Guide: Initializing database")
     self:InitializeDatabase()
     
     -- Populate Zone IDs
-    print("Wanderer's Guide: Populating Zone IDs")
-    self:PopulateZoneIds()
+    addon.PopulateZoneIds()
     
     -- Register events
-    print("Wanderer's Guide: Registering events")
     self:RegisterEvent("PLAYER_ENTERING_WORLD")
     self:RegisterEvent("PLAYER_LOGIN")
     self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
@@ -51,6 +46,9 @@ function addon:OnInitialize()
     self:RegisterEvent("CRITERIA_COMPLETE")
     self:RegisterEvent("QUEST_TURNED_IN")
     self:RegisterEvent("PLAYER_XP_UPDATE")
+    
+    -- Initialize UI
+    self:InitializeUI()
     
     print("Wanderer's Guide: OnInitialize completed")
 end
@@ -107,7 +105,12 @@ end
 -- Slash command
 SLASH_WANDERERSGUIDE1 = "/wg"
 SlashCmdList["WANDERERSGUIDE"] = function(msg)
-    addon:HandleSlashCommand(msg)
+    if msg == "reset" then
+        addon:ResetButtonPosition()
+    else
+        print("Wanderer's Guide commands:")
+        print("  /wg reset - Reset button positions")
+    end
 end
 
 SLASH_WGCHECK1 = "/wgcheck"
@@ -141,3 +144,27 @@ C_Timer.After(0, function()
 end)
 
 DebugPrint("Addon initialization complete")
+
+function addon:ADDON_LOADED(event, loadedAddonName)
+    if loadedAddonName == addonName then
+        self:OnAddonLoaded()
+    end
+end
+
+function addon:ToggleLevelingMode()
+    self.LevelingMode = not self.LevelingMode
+    if self.LevelingMode then
+        print("Leveling mode enabled")
+        -- Add any additional logic for enabling leveling mode
+    else
+        print("Leveling mode disabled")
+        -- Add any additional logic for disabling leveling mode
+    end
+    self:UpdateLevelingButton()
+end
+
+function addon:UpdateLevelingButton()
+    if self.LevelingButton then
+        self.LevelingButton:SetText(self.LevelingMode and "Leveling On" or "Leveling Off")
+    end
+end

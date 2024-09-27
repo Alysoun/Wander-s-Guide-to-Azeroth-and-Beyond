@@ -149,93 +149,146 @@ end
 
 -- Function to create map buttons
 function addon:CreateMapButtons()
+    print("Wanderer's Guide: Creating map buttons")
     local parentFrame = WorldMapFrame.BorderFrame or WorldMapFrame
 
-    -- Create the Exploration button (ShowAllPOIsButton)
-    if not addon.ShowAllPOIsButton then
-        addon.ShowAllPOIsButton = CreateFrame("Button", addonName.."MapButton", parentFrame, "UIPanelButtonTemplate")
-        addon.ShowAllPOIsButton:SetPoint("BOTTOMLEFT", parentFrame, "BOTTOMLEFT", 10, 20)
-        addon.ShowAllPOIsButton:SetSize(120, 25)
-        addon.ShowAllPOIsButton:SetText("Show All POIs")
-        addon.ShowAllPOIsButton:SetScript("OnClick", function()
-            local count = addon:ShowPOIsForCurrentMap()
-            if count > 0 then
-                addon.ShowAllPOIsButton:SetText("Remove All POIs")
-                addon.activePOIs = count
-            else
-                print("No POIs found for the current map")
+    -- Create a container frame for our buttons
+    if not addon.ButtonContainer then
+        addon.ButtonContainer = CreateFrame("Frame", addonName.."ButtonContainer", parentFrame)
+        addon.ButtonContainer:SetSize(250, 60)
+        addon.ButtonContainer:SetPoint("BOTTOMLEFT", parentFrame, "BOTTOMLEFT", 10, 10)
+        addon.ButtonContainer:SetMovable(true)
+        addon.ButtonContainer:EnableMouse(true)
+        addon.ButtonContainer:RegisterForDrag("LeftButton")
+        addon.ButtonContainer:SetScript("OnDragStart", function(self)
+            if IsControlKeyDown() or IsAltKeyDown() then
+                self:StartMoving()
             end
         end)
-        addon:MakeFrameMovable(addon.ShowAllPOIsButton, "Exploration")
+        addon.ButtonContainer:SetScript("OnDragStop", function(self)
+            self:StopMovingOrSizing()
+            addon:SaveButtonPosition()
+        end)
+        -- Make the container frame click-through
+        addon.ButtonContainer:EnableMouse(false)
     end
 
-    -- Create the Leveling button
-    if not addon.LevelingButton then
-        addon.LevelingButton = CreateFrame("Button", addonName.."LevelingButton", parentFrame, "UIPanelButtonTemplate")
-        addon.LevelingButton:SetText("Start Leveling")
-        addon.LevelingButton:SetPoint("LEFT", addon.ShowAllPOIsButton, "RIGHT", 5, 0)
-        addon.LevelingButton:SetSize(100, 25)
-        addon.LevelingButton:SetScript("OnClick", addon.ToggleLevelingMode)
-        addon:MakeFrameMovable(addon.LevelingButton, "Leveling")
+    -- Create the "Show All POIs" button
+    if not addon.ShowAllPOIsButton then
+        addon.ShowAllPOIsButton = CreateFrame("Button", addonName.."ShowPOIsButton", addon.ButtonContainer, "UIPanelButtonTemplate")
+        addon.ShowAllPOIsButton:SetSize(120, 25)
+        addon.ShowAllPOIsButton:SetPoint("TOPLEFT", addon.ButtonContainer, "TOPLEFT", 0, 0)
+        addon.ShowAllPOIsButton:SetText("Show All POIs")
+        addon.ShowAllPOIsButton:SetScript("OnClick", function()
+            addon:TogglePOIs()
+        end)
+        addon.ShowAllPOIsButton:SetScript("OnDragStart", function()
+            addon.ButtonContainer:GetScript("OnDragStart")(addon.ButtonContainer)
+        end)
+        addon.ShowAllPOIsButton:SetScript("OnDragStop", function()
+            addon.ButtonContainer:GetScript("OnDragStop")(addon.ButtonContainer)
+        end)
+        addon.ShowAllPOIsButton:RegisterForDrag("LeftButton")
     end
 
-    -- Create the Remove All POIs button
-    if not addon.RemoveAllPOIsButton then
-        addon.RemoveAllPOIsButton = CreateFrame("Button", addonName.."RemoveAllButton", parentFrame, "UIPanelButtonTemplate")
-        addon.RemoveAllPOIsButton:SetPoint("TOPLEFT", addon.ShowAllPOIsButton, "BOTTOMLEFT", 0, -5)
-        addon.RemoveAllPOIsButton:SetSize(120, 25)
-        addon.RemoveAllPOIsButton:SetText("Remove All POIs")
-        addon.RemoveAllPOIsButton:SetScript("OnClick", function(self)
-            print("Remove All POIs button clicked")
+    -- Create the "Remove POIs" button
+    if not addon.RemovePOIsButton then
+        addon.RemovePOIsButton = CreateFrame("Button", addonName.."RemovePOIsButton", addon.ButtonContainer, "UIPanelButtonTemplate")
+        addon.RemovePOIsButton:SetSize(120, 25)
+        addon.RemovePOIsButton:SetPoint("TOPLEFT", addon.ShowAllPOIsButton, "BOTTOMLEFT", 0, -5)
+        addon.RemovePOIsButton:SetText("Remove POIs")
+        addon.RemovePOIsButton:SetScript("OnClick", function()
             addon:RemoveAllPOIs()
+        end)
+        addon.RemovePOIsButton:SetScript("OnDragStart", function()
+            addon.ButtonContainer:GetScript("OnDragStart")(addon.ButtonContainer)
+        end)
+        addon.RemovePOIsButton:SetScript("OnDragStop", function()
+            addon.ButtonContainer:GetScript("OnDragStop")(addon.ButtonContainer)
+        end)
+        addon.RemovePOIsButton:RegisterForDrag("LeftButton")
+    end
+
+    -- Create the "Leveling" button
+    if not addon.LevelingButton then
+        addon.LevelingButton = CreateFrame("Button", addonName.."LevelingButton", addon.ButtonContainer, "UIPanelButtonTemplate")
+        addon.LevelingButton:SetSize(120, 25)
+        addon.LevelingButton:SetPoint("LEFT", addon.ShowAllPOIsButton, "RIGHT", 10, 0)
+        addon.LevelingButton:SetText("Leveling")
+        addon.LevelingButton:SetScript("OnClick", function()
+            addon:ToggleLevelingMode()
+        end)
+        addon.LevelingButton:SetScript("OnDragStart", function()
+            addon.ButtonContainer:GetScript("OnDragStart")(addon.ButtonContainer)
+        end)
+        addon.LevelingButton:SetScript("OnDragStop", function()
+            addon.ButtonContainer:GetScript("OnDragStop")(addon.ButtonContainer)
+        end)
+        addon.LevelingButton:RegisterForDrag("LeftButton")
+    end
+
+    -- Add tooltip to each button
+    local function AddMoveTooltip(button)
+        button:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            GameTooltip:SetText("Hold Ctrl/Alt to move")
+            GameTooltip:Show()
+        end)
+        button:SetScript("OnLeave", function(self)
+            GameTooltip:Hide()
         end)
     end
 
-    -- Add a script to update the button when the map is shown
-    WorldMapFrame:RegisterCallback("OnMapChanged", function()
-        addon:CheckAndUpdateMap()
-    end)
+    AddMoveTooltip(addon.ShowAllPOIsButton)
+    AddMoveTooltip(addon.RemovePOIsButton)
+    AddMoveTooltip(addon.LevelingButton)
+
+    addon:LoadButtonPosition()
+    print("Wanderer's Guide: Map buttons created")
 end
 
--- Function to make a frame movable
-function addon:MakeFrameMovable(frame, buttonName)
-    frame:SetMovable(true)
-    frame:EnableMouse(true)
-    frame:RegisterForDrag("LeftButton")
-    frame:SetScript("OnDragStart", function(self)
-        if IsAltKeyDown() or IsControlKeyDown() then
-            self:StartMoving()
-        end
-    end)
-    frame:SetScript("OnDragStop", function(self)
-        self:StopMovingOrSizing()
-        -- Save the position
-        local point, _, relativePoint, xOfs, yOfs = self:GetPoint()
-        if addon.db and addon.db.profile then
-            addon.db.profile[buttonName .. "Position"] = {point, relativePoint, xOfs, yOfs}
-        end
-    end)
+-- Function to save button positions
+function addon:SaveButtonPosition()
+    local point, _, relativePoint, xOfs, yOfs = addon.ButtonContainer:GetPoint()
+    WandererGuideDB = WandererGuideDB or {}
+    WandererGuideDB.buttonPosition = {point, relativePoint, xOfs, yOfs}
+end
+
+-- Function to load button positions
+function addon:LoadButtonPosition()
+    if WandererGuideDB and WandererGuideDB.buttonPosition then
+        local point, relativePoint, xOfs, yOfs = unpack(WandererGuideDB.buttonPosition)
+        addon.ButtonContainer:ClearAllPoints()
+        addon.ButtonContainer:SetPoint(point, WorldMapFrame, relativePoint, xOfs, yOfs)
+    end
+end
+
+-- Function to reset button positions
+function addon:ResetButtonPosition()
+    addon.ButtonContainer:ClearAllPoints()
+    addon.ButtonContainer:SetPoint("BOTTOMLEFT", WorldMapFrame, "BOTTOMLEFT", 10, 10)
+    addon:SaveButtonPosition()
+    print("Wanderer's Guide: Button positions reset")
 end
 
 -- Function to initialize UI components
 function addon:InitializeUI()
     print("Wanderer's Guide: InitializeUI started")
     
-    -- Add this before creating any frames or buttons
     if not WorldMapFrame then
         print("Wanderer's Guide: WorldMapFrame not found")
         return
     end
     
-    -- Add debug prints before creating each UI element
-    print("Wanderer's Guide: Creating main frame")
-    -- Code to create main frame
+    self:CreateMapButtons()
+    self:SetupWorldMapHook()
     
-    print("Wanderer's Guide: Creating map buttons")
-    -- Code to create map buttons
-    
-    print("Wanderer's Guide: Setting up WorldMapFrame hook")
-    -- Code to set up WorldMapFrame hook
+    -- Ensure buttons are visible when the map is shown
+    WorldMapFrame:HookScript("OnShow", function()
+        if addon.ShowAllPOIsButton then addon.ShowAllPOIsButton:Show() end
+        if addon.RemovePOIsButton then addon.RemovePOIsButton:Show() end
+        if addon.LevelingButton then addon.LevelingButton:Show() end
+    end)
     
     print("Wanderer's Guide: InitializeUI completed")
 end
@@ -249,6 +302,26 @@ function addon:TogglePOIs()
     else
         self:RemoveAllPOIs()
         self.activePOIs = 0
+    end
+end
+
+-- Function to toggle leveling mode
+function addon:ToggleLevelingMode()
+    self.LevelingMode = not self.LevelingMode
+    if self.LevelingMode then
+        print("Leveling mode enabled")
+        -- Add any additional logic for enabling leveling mode
+    else
+        print("Leveling mode disabled")
+        -- Add any additional logic for disabling leveling mode
+    end
+    self:UpdateLevelingButton()
+end
+
+-- Function to update leveling button text
+function addon:UpdateLevelingButton()
+    if self.LevelingButton then
+        self.LevelingButton:SetText(self.LevelingMode and "Leveling On" or "Leveling Off")
     end
 end
 

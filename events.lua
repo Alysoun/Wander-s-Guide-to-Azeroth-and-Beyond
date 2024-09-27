@@ -1,4 +1,3 @@
-
 local addonName, addon = ...
 
 -- Create the event frame
@@ -19,18 +18,7 @@ addon.eventHandlers = {
     -- Other event handlers...
 }
 
--- Function to register event handlers
-function addon:RegisterEventHandlers()
-    for event, handler in pairs(self.eventHandlers) do
-        self.eventFrame:RegisterEvent(event)
-    end
-    self.eventFrame:SetScript("OnEvent", function(_, event, ...)
-        local handler = addon.eventHandlers[event]
-        if handler then
-            handler(addon, event, ...)
-        end
-    end)
-end
+
 
 -- Event handler for ADDON_LOADED
 addon.eventHandlers.ADDON_LOADED = function(loadedAddonName)
@@ -65,6 +53,9 @@ function addon.OnAddonLoaded()
     ExplorationCoordsDB.ignoredAreas = ExplorationCoordsDB.ignoredAreas or {}
 
     -- Other initialization code...
+    addon:PopulateZoneIds()
+    addon:InitializeUI()
+    addon:SetupWorldMapHook()
 end
 
 -- Event handler for PLAYER_ENTERING_WORLD
@@ -76,6 +67,27 @@ addon.eventHandlers.PLAYER_ENTERING_WORLD = function(self, event, isInitialLogin
     end
     addon.UpdateWaypoints()
 end
+
+-- Add this function to your addon
+    function addon:SetupWorldMapHook()
+        if not WorldMapFrame then
+            self.DebugPrint("WorldMapFrame not found")
+            return
+        end
+    
+        if WorldMapFrame.OnMapChanged then
+            hooksecurefunc(WorldMapFrame, "OnMapChanged", function()
+                self.DebugPrint("Map changed")
+                self:UpdateExplorationButtonText()
+            end)
+        else
+            -- Fallback for older versions
+            WorldMapFrame:HookScript("OnShow", function()
+                self.DebugPrint("World map shown")
+                self:UpdateExplorationButtonText()
+            end)
+        end
+    end
 
 -- Event handler for ZONE_CHANGED_NEW_AREA
 addon.eventHandlers.ZONE_CHANGED_NEW_AREA = function(self, event)
@@ -228,11 +240,6 @@ function addon.CheckChromieTimeStatus()
     end
 end
 
--- Adding WORLD_MAP_UPDATE event handler
-addon.eventHandlers.WORLD_MAP_UPDATE = function(self, event)
-    addon.DebugPrint("WORLD_MAP_UPDATE event fired")
-    addon.UpdateExplorationButtonText()
-end
 
 -- Create a frame to handle events
 local function OnEvent(self, event, ...)
@@ -248,5 +255,3 @@ eventFrame:RegisterEvent("ZONE_CHANGED")
 eventFrame:RegisterEvent("ZONE_CHANGED_INDOORS")
 eventFrame:SetScript("OnEvent", OnEvent)
 
--- Register all event handlers
-addon:RegisterEventHandlers()

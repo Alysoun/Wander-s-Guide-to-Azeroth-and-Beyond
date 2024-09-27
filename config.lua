@@ -70,21 +70,23 @@ addon.continentToChromieExpansion = {
 }
 
 -- Zone IDs table
-addon.ZoneIds = {}
+addon.ZoneIds = addon.ZoneIds or {}
 
 -- Function to populate Zone IDs
 function addon.PopulateZoneIds()
-    for continentID = 1, 2000 do
-        local continentInfo = C_Map.GetMapInfo(continentID)
-        if continentInfo then
-            for zoneID = 1, 2000 do
-                local zoneInfo = C_Map.GetMapInfo(zoneID)
-                if zoneInfo and zoneInfo.parentMapID == continentID then
-                    addon.ZoneIds[zoneInfo.name] = zoneID
-                end
-            end
-        end
+    addon.ZoneIds = {}
+    local mapChildrenInfo = C_Map.GetMapChildrenInfo(946, Enum.UIMapType.Zone, true)
+    for _, childInfo in ipairs(mapChildrenInfo) do
+        addon.ZoneIds[childInfo.name] = childInfo.mapID
     end
+    print("ZoneIds populated with " .. addon.TableLength(addon.ZoneIds) .. " entries")
+end
+
+-- Helper function to get table length
+function addon.TableLength(T)
+    local count = 0
+    for _ in pairs(T) do count = count + 1 end
+    return count
 end
 
 -- Load configuration when the addon is loaded
