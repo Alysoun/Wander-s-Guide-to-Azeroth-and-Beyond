@@ -130,21 +130,26 @@ end
 -- Function to update the Exploration button text
 function addon:UpdateExplorationButtonText()
     local mapID = WorldMapFrame:GetMapID()
-    local mapInfo = C_Map.GetMapInfo(mapID)
-    local currentMap = mapInfo and mapInfo.name or "Unknown Map"
-    
-    if currentMap == "Cosmic" or currentMap == "Azeroth" then
-        addon.ShowAllPOIsButton:SetText("POIs not available")
-        addon.ShowAllPOIsButton:Disable()
-    else
-        local text = "Show all POIs for " .. currentMap
-        addon.ShowAllPOIsButton:SetText(text)
-        addon.ShowAllPOIsButton:Enable()
-    end
+    if mapID then
+        local mapInfo = C_Map.GetMapInfo(mapID)
+        if mapInfo then
+            local currentMap = mapInfo.name
+            
+            if currentMap == "Cosmic" or currentMap == "Azeroth" then
+                self.ShowAllPOIsButton:SetText("POIs not available")
+                self.ShowAllPOIsButton:Disable()
+            else
+                local buttonText = self.activePOIs > 0 and "Remove POIs" or "Show POIs"
+                buttonText = buttonText .. " (" .. currentMap .. ")"
+                self.ShowAllPOIsButton:SetText(buttonText)
+                self.ShowAllPOIsButton:Enable()
+            end
 
-    -- Get the width of the button text and adjust button size
-    local textWidth = addon.ShowAllPOIsButton:GetFontString():GetStringWidth()
-    addon.ShowAllPOIsButton:SetWidth(textWidth + 20)  -- Add padding to the width
+            -- Get the width of the button text and adjust button size
+            local textWidth = self.ShowAllPOIsButton:GetFontString():GetStringWidth()
+            self.ShowAllPOIsButton:SetWidth(textWidth + 20)  -- Add padding to the width
+        end
+    end
 end
 
 -- Function to create map buttons
@@ -293,17 +298,32 @@ function addon:InitializeUI()
     print("Wanderer's Guide: InitializeUI completed")
 end
 
+-- Function to toggle POIs
 function addon:TogglePOIs()
+    print("TogglePOIs called. Active POIs:", self.activePOIs)
     if self.activePOIs == 0 then
+        print("Showing POIs for current map")
         local count = self:ShowPOIsForCurrentMap()
         if count > 0 then
             self.activePOIs = count
         end
     else
+        print("Removing all POIs")
         self:RemoveAllPOIs()
         self.activePOIs = 0
     end
+    if self.UpdateUI then
+        self:UpdateUI()
+    else
+        print("UpdateUI function not found")
+    end
+    print("TogglePOIs finished. Current activePOIs:", self.activePOIs)
 end
+
+-- Add this to your InitializeUI function or wherever you set up your UI
+WorldMapFrame:HookScript("OnMapChanged", function()
+    addon:UpdateUI()
+end)
 
 -- Function to toggle leveling mode
 function addon:ToggleLevelingMode()
@@ -315,7 +335,7 @@ function addon:ToggleLevelingMode()
         print("Leveling mode disabled")
         -- Add any additional logic for disabling leveling mode
     end
-    self:UpdateLevelingButton()
+    self:UpdateUI()
 end
 
 -- Function to update leveling button text
@@ -323,6 +343,23 @@ function addon:UpdateLevelingButton()
     if self.LevelingButton then
         self.LevelingButton:SetText(self.LevelingMode and "Leveling On" or "Leveling Off")
     end
+end
+
+-- Function to update the UI
+addon.UpdateUI = function(self)
+    print("UpdateUI called")  -- Debug print
+    self:UpdateExplorationButtonText()
+    
+    -- Update other UI elements if needed
+    if self.RemovePOIsButton then
+        self.RemovePOIsButton:SetEnabled(self.activePOIs > 0)
+    end
+    
+    if self.LevelingButton then
+        self.LevelingButton:SetText(self.LevelingMode and "Leveling On" or "Leveling Off")
+    end
+    
+    -- Add any other UI updates you need here
 end
 
 -- Call this at the end of the file to ensure all functions are defined
@@ -382,12 +419,5 @@ addon:InitializeUI()
         return false
     end
 
--- Add these functions to your addon table
-
-function addon:UpdateUI()
-    -- Update any UI elements here
-    if self.ShowAllPOIsButton then
-        self.ShowAllPOIsButton:SetText(self.activePOIs > 0 and "Remove All POIs" or "Show All POIs")
-    end
-    -- Add any other UI updates you need
-end
+-- Add this at the end of ui.lua
+print("UpdateUI function defined:", addon.UpdateUI ~= nil)

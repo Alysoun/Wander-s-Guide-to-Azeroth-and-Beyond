@@ -17,12 +17,10 @@ config.lua
 debug.lua
 helpers.lua
 events.lua
-pois.lua
-tomtom.lua
+poi_manager.lua
 ui.lua
 leveling.lua
 achievements.lua
-waypoints.lua
 
 
 

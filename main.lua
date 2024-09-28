@@ -1,5 +1,7 @@
 -- main.lua
 
+print("DEBUG: Loading Wanderer's Guide to Azeroth and Beyond")
+
 local addonName, addon = ...
 print("Wanderer's Guide to Azeroth and Beyond: main.lua loading")
 
@@ -166,5 +168,29 @@ end
 function addon:UpdateLevelingButton()
     if self.LevelingButton then
         self.LevelingButton:SetText(self.LevelingMode and "Leveling On" or "Leveling Off")
+    end
+end
+
+function addon:DebugPrintExploredCoords()
+    if CollectCoordDB and CollectCoordDB.exploredCoords then
+        for continentName, continentData in pairs(CollectCoordDB.exploredCoords) do
+            print("Continent: " .. continentName)
+            if type(continentData) == "table" then
+                for zoneName, zoneData in pairs(continentData) do
+                    print("  Zone: " .. zoneName)
+                    if type(zoneData) == "table" then
+                        for poiName, coords in pairs(zoneData) do
+                            if type(coords) == "table" and coords.x and coords.y then
+                                print(string.format("    POI: %s at (%.2f, %.2f)", poiName, coords.x, coords.y))
+                            else
+                                print("    Invalid POI data for: " .. poiName)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    else
+        print("CollectCoordDB or exploredCoords is nil")
     end
 end
